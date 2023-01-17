@@ -1,4 +1,4 @@
-# Code Infinity Proficency Test - @
+# Code Infinity Proficency Test - 2
 
 > This project is my interpritation of the requriements stated in the test document.
 
