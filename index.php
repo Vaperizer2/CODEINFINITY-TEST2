@@ -7,12 +7,21 @@
     $CSV_Imported_Data = [];
 
 
-    //Connect to SQLite Database
-    $db = new SQLite3('mydb.sq3');
+    //Connect / Creates the Database
+    $db = new PDO('sqlite:CSV.sqlite3');
+    $Table=$db->prepare("CREATE TABLE IF NOT EXISTS csv_import(
+        id  INTEGER PRIMARY KEY AUTOINCREMENT, 
+        [name] TEXT NOT NULL, 
+        surname TEXT NOT NULL, 
+        intitals VARCHAR NOT NULL, 
+        age INTEGER,
+        dateOfBirth TEXT);
+    )");
+    $Table -> execute();
     
-    $SQL = '';
-    $result = $db->query($SQL);
-
+    //Clears the database for new data.
+    $Table = $db->prepare("DELETE FROM csv_import");
+    $Table -> execute();
 
     $NAMES = [
     "Joey","Aurelio","Evan","Donny","Foster","Dwayne","Grady","Quinton","Darin",
@@ -33,13 +42,26 @@
             $Variations = filter_input(INPUT_POST, 'Variations', FILTER_SANITIZE_NUMBER_INT);
         }
 
+        //Creates the file 
+        if(file_exists('Output\output.csv')){
+            $CSV_Output_File = fopen("Output\output.csv", 'w');
+        } else {
+            $CSV_Output_File = fopen("Output\output.csv", 'w');
+        }
+
+        //Generates the unique combinations
+        $Counter = 1;
         while($Counter <= $Variations) {
-            $name = $NAMES[rand(1,20)];
-            $surname = $SURNAMES[rand(1,20)];
-            $initial = $name[1];
+            $Client = '';
+
+
+            $name = $NAMES[rand(0,19)];
+            $surname = $SURNAMES[rand(0,19)];
+            $initial = strtoupper($name[0]);
             $age = rand(18,60);
             
-            $bYear = date('Y') - $age;
+            
+            $bYear = 2023 - $age;
             
             $bMonth = rand(1,12);
             if($bMonth % 2 == 1 && $bMonth == 8) {
@@ -51,15 +73,39 @@
                     $bday = rand(1,30);
                 }
             }
+            //Adds leading 0
+            if($bMonth < 10) {
+                $bMonth = "0$bMonth";
+            }
+            if($bday < 10) {
+                $bday = "0$bday";
+            }
 
-            $Client = "$name,$surname,$initial,$age,$bday/$bMonth/$bYear";
+            $dob = $bday .'/'. $bMonth .'/'. $bYear;
             
-            //Create CSV
-            //Add check for dupes
-            //Expot to Output folder
+
+            $Client = array($name, $surname, $initial, $age, $dob);
             
+            if($Counter == 1) {
+                array_unshift($Client, $Counter);
+                fputcsv($CSV_Output_File, $Client);
+                $Counter += 1;
+            } else {
+                $file = file_get_contents('Output\output.csv');
+
+                if (! strpos($file,  implode(",", ($Client))) !== false) {
+                    array_unshift($Client, $Counter);
+                    fputcsv($CSV_Output_File, $Client);
+                    $Counter += 1;    
+                } 
+            }
         }
+        echo "<script type=\"text/javascript\">
+                alert(\"CSV file has been created.\");
+                window.location = \"index.php\"
+            </script>";
         
+        fclose($CSV_Output_File);
 
     }
     
@@ -70,13 +116,30 @@
             $CSV_Imported_File = fopen($CSV_Imported_Name, 'r');
 
             while(($CSV_Imported_Data = fgetcsv($CSV_Imported_File, 10000, ",")) !== FALSE) {
-                // TODO: Finnish importing, Checking for correctness
+                array_unshift($CSV_Imported_Data);
+                
+                $SQL = "INSERT INTO csv_import ([name], surname, intitals, age, dateOfBirth) 
+                VALUES ('" . $CSV_Imported_Data[1] . "', '" . $CSV_Imported_Data[2] . "', '" . ($CSV_Imported_Data[3]) . "'," . $CSV_Imported_Data[4] . ",'" . $CSV_Imported_Data[5] . "')";
+                
+                
+                $result = $db->query($SQL);
+                
+                if(!isset($result))
+                {
+                echo "<script type=\"text/javascript\">
+                    alert(\"Invalid File:Please Upload CSV File.\");
+                    window.location = \"index.php\"
+                    </script>";    
+                }
+                else {
+                    echo "<script type=\"text/javascript\">
+                    alert(\"CSV File has been successfully Imported.\");
+                    window.location = \"index.php\"
+                </script>";
+                }
             }
         }
-        
     }
-
-
 ?>
 
 <!DOCTYPE html>
