@@ -1,4 +1,5 @@
 <?php 
+    //Initialisation
     $has_Error = false;
     $VariationsErr = '';
     $Variations = 0;
@@ -15,14 +16,14 @@
         surname TEXT NOT NULL, 
         intitals VARCHAR NOT NULL, 
         age INTEGER,
-        dateOfBirth TEXT);
-    )");
+        dateOfBirth TEXT)");
     $Table -> execute();
     
     //Clears the database for new data.
     $Table = $db->prepare("DELETE FROM csv_import");
     $Table -> execute();
-
+    
+    //Declare the Names and Surnames to be used
     $NAMES = [
     "Joey","Aurelio","Evan","Donny","Foster","Dwayne","Grady","Quinton","Darin",
     "Mickey","Hank","Kim","Peter","Jeremy","Jess","Jimmie","Vern","Pasquale",
@@ -33,8 +34,10 @@
     "Goodwin","Walton","Warren","Flynn","Dean","Torres","Chen","Dixon","Flowers","Jackson", 
     "Frank"];
     
-
+    
+    //Checks if the Create CSV File button was pressed.
     if(isset($_POST['CSubmit'])) {
+        //Validation 
         if(empty($_POST['Variations'])) {
             $VariationsErr = 'Please input the number of variations needed';
             $has_Error = true;
@@ -73,6 +76,7 @@
                     $bday = rand(1,30);
                 }
             }
+
             //Adds leading 0
             if($bMonth < 10) {
                 $bMonth = "0$bMonth";
@@ -81,16 +85,18 @@
                 $bday = "0$bday";
             }
 
+            //Creates a "Date" string.
             $dob = $bday .'/'. $bMonth .'/'. $bYear;
-            
 
             $Client = array($name, $surname, $initial, $age, $dob);
             
+            //Inputs into CSV File
             if($Counter == 1) {
                 array_unshift($Client, $Counter);
                 fputcsv($CSV_Output_File, $Client);
                 $Counter += 1;
             } else {
+                //Checks for Duplicates
                 $file = file_get_contents('Output\output.csv');
 
                 if (! strpos($file,  implode(",", ($Client))) !== false) {
@@ -100,6 +106,7 @@
                 } 
             }
         }
+        //Notification of completion
         echo "<script type=\"text/javascript\">
                 alert(\"CSV file has been created.\");
                 window.location = \"index.php\"
@@ -109,12 +116,15 @@
 
     }
     
+    //Checks if Import CSV File button was pressed
     if(isset($_POST['ISubmit'])) {
         $CSV_Imported_Name = $_FILES["Import"]["tmp_name"]; 
 
+        //Checks if CSV file is empty.
         if($_FILES["Import"]["size"] > 0) {
             $CSV_Imported_File = fopen($CSV_Imported_Name, 'r');
 
+            //Imports into SQLite Database.
             while(($CSV_Imported_Data = fgetcsv($CSV_Imported_File, 10000, ",")) !== FALSE) {
                 array_unshift($CSV_Imported_Data);
                 
@@ -124,19 +134,21 @@
                 
                 $result = $db->query($SQL);
                 
-                if(!isset($result))
-                {
-                echo "<script type=\"text/javascript\">
-                    alert(\"Invalid File:Please Upload CSV File.\");
-                    window.location = \"index.php\"
-                    </script>";    
-                }
-                else {
-                    echo "<script type=\"text/javascript\">
-                    alert(\"CSV File has been successfully Imported.\");
-                    window.location = \"index.php\"
-                </script>";
-                }
+                //Notification For input - Not used at the moment.
+                
+                // if(!isset($result))
+                // {
+                // echo "<script type=\"text/javascript\">
+                //     alert(\"Invalid File:Please Upload CSV File.\");
+                //     window.location = \"index.php\"
+                //     </script>";    
+                // }
+                // else {
+                //     echo "<script type=\"text/javascript\">
+                //     alert(\"CSV File has been successfully Imported.\");
+                //     window.location = \"index.php\"
+                // </script>";
+                // }
             }
         }
     }
@@ -170,7 +182,6 @@
     </div>
 
     <div class="Titles">
-        
         <div class="Column">
             <h3>Create a CSV File</h3>
             <form action="index.php" method="post">
@@ -179,7 +190,6 @@
                     <label for="Variations">Please input the number of variations</label>
                     <input type="text" name="Variations" placeholder="1 000 000">
                 </div>
-
 
                 <input type="submit" value="GO" name="CSubmit" id="CSubmit" class="Button">
 
@@ -196,7 +206,6 @@
                     <input type="File" name="Import" id="Import">
                 </div>
 
-
                 <input type="submit" value="GO" name="ISubmit" id="ISubmit" class="Button">
 
             </form>
@@ -204,8 +213,5 @@
 
     </div>
     
-
-
-
 </body>
 </html>
